@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyBuddy AI - Homework Assistant</title>
+    <base target="_self">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@preline/preline@2.0.0/dist/preline.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .message-enter {
+            animation: messageEnter 0.3s ease-out forwards;
+        }
+        @keyframes messageEnter {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .typing-indicator span {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #9ca3af;
+            margin: 0 2px;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-5px); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 h-full flex flex-col">
+    <header class="bg-white dark:bg-gray-800 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-robot text-2xl text-primary-500"></i>
+                <h1 class="text-xl font-bold">StudyBuddy AI</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button id="themeToggle" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+                    <i class="fas fa-moon dark:hidden"></i>
+                    <i class="fas fa-sun hidden dark:inline"></i>
+                </button>
+                <button id="newChatBtn" class="px-3 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium transition-colors">
+                    <i class="fas fa-plus mr-1"></i> New Chat
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 flex flex-col max-w-7xl w-full mx-auto px-4 py-6 sm:px-6 lg:px-8">
+        <div id="chatContainer" class="flex-1 overflow-y-auto mb-4 space-y-4">
+            <div class="message-enter bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm max-w-3xl mx-auto">
+                <div class="flex items-start space-x-3">
+                    <div class="flex-shrink-0 bg-primary-100 dark:bg-primary-900 rounded-full w-8 h-8 flex items-center justify-center">
+                        <i class="fas fa-robot text-primary-600 dark:text-primary-300"></i>
+                    </div>
+                    <div>
+                        <p class="font-medium">StudyBuddy AI</p>
+                        <p class="mt-1 text-gray-700 dark:text-gray-300">Hi there! I'm StudyBuddy, your AI homework assistant. I can help you understand concepts, brainstorm ideas, and improve your writing - but I won't do your work for you. How can I help you learn today?</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 max-w-3xl mx-auto w-full">
+            <form id="chatForm" class="space-y-3">
+                <div class="flex space-x-2">
+                    <select id="subjectSelect" class="flex-1 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500">
+                        <option value="">Select subject...</option>
+                        <option value="english">English/Literature</option>
+                        <option value="history">History/Social Studies</option>
+                        <option value="science">Science</option>
+                        <option value="math">Mathematics</option>
+                        <option value="foreign">Foreign Language</option>
+                        <option value="arts">Arts/Humanities</option>
+                        <option value="other">Other</option>
+                    </select>
+                    <select id="assistanceType" class="flex-1 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500">
+                        <option value="">Type of help...</option>
+                        <option value="explain">Explain a concept</option>
+                        <option value="brainstorm">Brainstorm ideas</option>
+                        <option value="outline">Create an outline</option>
+                        <option value="draft">Help with a draft</option>
+                        <option value="revise">Revise/edit my work</option>
+                        <option value="quiz">Quiz me on this</option>
+                    </select>
+                </div>
+                <div class="relative">
+                    <textarea id="messageInput" rows="3" class="block w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500" placeholder="Ask me anything about your assignment..."></textarea>
+                    <button type="submit" class="absolute right-2 bottom-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg p-2 transition-colors">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 text-center">StudyBuddy is designed to help you learn, not to do your work for you. Always submit your own original work.</p>
+            </form>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Theme toggle
+            const themeToggle = document.getElementById('themeToggle');
+            themeToggle.addEventListener('click', () => {
+                document.documentElement.classList.toggle('dark');
+                localStorage.setItem('darkMode', document.documentElement.classList.contains('dark'));
+            });
+
+            // Check for saved theme preference
+            if (localStorage.getItem('darkMode') === 'true') {
+                document.documentElement.classList.add('dark');
+            } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                document.documentElement.classList.add('dark');
+            }
+
+            // Chat functionality
+            const chatForm = document.getElementById('chatForm');
+            const messageInput = document.getElementById('messageInput');
+            const chatContainer = document.getElementById('chatContainer');
+            const subjectSelect = document.getElementById('subjectSelect');
+            const assistanceType = document.getElementById('assistanceType');
+            const newChatBtn = document.getElementById('newChatBtn');
+
+            let conversationHistory = [];
+
+            chatForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const message = messageInput.value.trim();
+                const subject = subjectSelect.value;
+                const helpType = assistanceType.value;
+
+                if (!message) return;
+
+                // Add user message to chat
+                addMessageToChat('user', message, subject, helpType);
+                messageInput.value = '';
+
+                // Show typing indicator
+                const typingIndicator = document.createElement('div');
+                typingIndicator.className = 'typing-indicator bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm max-w-3xl mx-auto';
+                typingIndicator.innerHTML = `
+                    <div class="flex items-start space-x-3">
+                        <div class="flex-shrink-0 bg-primary-100 dark:bg-primary-900 rounded-full w-8 h-8 flex items-center justify-center">
+                            <i class="fas fa-robot text-primary-600 dark:text-primary-300"></i>
+                        </div>
+                        <div>
+                            <p class="font-medium">StudyBuddy AI</p>
+                            <div class="mt-1 flex space-x-1">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                chatContainer.appendChild(typingIndicator);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+
+                // Simulate AI response after delay
+                setTimeout(() => {
+                    chatContainer.removeChild(typingIndicator);
+                    const aiResponse = generateAIResponse(message, subject, helpType);
+                    addMessageToChat('ai', aiResponse, subject, helpType);
+                }, 1500 + Math.random() * 2000);
+            });
+
+            function addMessageToChat(sender, message, subject, helpType) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message-enter bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm max-w-3xl mx-auto';
+                
+                if (sender === 'user') {
+                    conversationHistory.push({ role: 'user', content: message });
+                    messageDiv.innerHTML = `
+                        <div class="flex items-start space-x-3 justify-end">
+                            <div class="text-right">
+                                <p class="font-medium">You</p>
+                                <p class="mt-1 text-gray-700 dark:text-gray-300">${message}</p>
+                                ${subject || helpType ? `
+                                <div class="mt-2 flex justify-end space-x-2">
+                                    ${subject ? `<span class="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-full">${getSubjectName(subject)}</span>` : ''}
+                                    ${helpType ? `<span class="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-full">${getHelpTypeName(helpType)}</span>` : ''}
+                                </div>
+                                ` : ''}
+                            </div>
+                            <div class="flex-shrink-0 bg-gray-100 dark:bg-gray-700 rounded-full w-8 h-8 flex items-center justify-center">
+                                <i class="fas fa-user text-gray-600 dark:text-gray-300"></i>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    conversationHistory.push({ role: 'assistant', content: message });
+                    messageDiv.innerHTML = `
+                        <div class="flex items-start space-x-3">
+                            <div class="flex-shrink-0 bg-primary-100 dark:bg-primary-900 rounded-full w-8 h-8 flex items-center justify-center">
+                                <i class="fas fa-robot text-primary-600 dark:text-primary-300"></i>
+                            </div>
+                            <div>
+                                <p class="font-medium">StudyBuddy AI</p>
+                                <p class="mt-1 text-gray-700 dark:text-gray-300">${message}</p>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                chatContainer.appendChild(messageDiv);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+
+            function generateAIResponse(message, subject, helpType) {
+                // This is a simplified simulation - in a real app, you'd call an AI API
+                const responses = {
+                    explain: [
+                        `Let me explain that concept. ${message} is essentially about... The key points to understand are...`,
+                        `I'd be happy to explain! ${message} refers to... Here's a simple way to think about it...`,
+                        `Great question! ${message} can be understood as... Remember that...`
+                    ],
+                    brainstorm: [
+                        `For ${message}, here are some ideas to consider: 1) ... 2) ... 3) ... Which of these resonates with you?`,
+                        `Let's brainstorm about ${message}. You could approach this by... Another angle might be...`,
+                        `Interesting topic! For ${message}, think about... Have you considered...?`
+                    ],
+                    outline: [
+                        `Here's a potential outline for your work on ${message}:\n\nI. Introduction\nII. Main Point 1\nIII. Main Point 2\nIV. Conclusion`,
+                        `For ${message}, you might structure your paper like this: 1) ... 2) ... 3) ... Would you like me to elaborate on any section?`,
+                        `Based on ${message}, consider this outline structure:\n- Thesis statement\n- Supporting evidence\n- Counterarguments\n- Conclusion`
+                    ],
+                    draft: [
+                        `Here's a sample opening paragraph for your ${message} assignment:\n\n"${getSampleOpening(subject)}"\n\nWould you like me to help refine this further?`,
+                        `For your ${message} assignment, you might start with: "${getSampleSentence(subject)}" Then develop this idea by...`,
+                        `Let me help with a draft section about ${message}. Try incorporating something like: "${getSampleContent(subject)}"`
+                    ],
+                    revise: [
+                        `To improve your writing on ${message}, consider: 1) Strengthening your thesis 2) Adding more examples 3) Improving transitions`,
+                        `For ${message}, your work could be enhanced by... Try to... Avoid... Remember to...`,
+                        `Here are some revision suggestions for ${message}: ... Would you like me to review specific sections?`
+                    ],
+                    quiz: [
+                        `Let's test your understanding of ${message}. Question 1: ...?\n(Answer will appear after you respond)`,
+                        `Quiz time! About ${message}:\n1) What is...?\n2) How does...?\n3) Why is...?`,
+                        `To check your knowledge of ${message}:\nQ: ...?\nA: ... (I'll reveal the answer after your attempt)`
+                    ],
+                    default: [
+                        `I'd be happy to help with ${message}. Could you tell me more about what specifically you're working on?`,
+                        `Regarding ${message}, here are some resources that might help: ... Have you looked at...?`,
+                        `For ${message}, it's important to consider... Have you thought about...?`
+                    ]
+                };
+
+                const responseType = helpType || 'default';
+                const possibleResponses = responses[responseType] || responses.default;
+                return possibleResponses[Math.floor(Math.random() * possibleResponses.length)];
+            }
+
+            function getSubjectName(subject) {
+                const subjects = {
+                    'english': 'English',
+                    'history': 'History',
+                    'science': 'Science',
+                    'math': 'Math',
+                    'foreign': 'Foreign Language',
+                    'arts': 'Arts',
+                    'other': 'Other'
+                };
+                return subjects[subject] || subject;
+            }
+
+            function getHelpTypeName(helpType) {
+                const types = {
+                    'explain': 'Explanation',
+                    'brainstorm': 'Brainstorming',
+                    'outline': 'Outline',
+                    'draft': 'Draft Help',
+                    'revise': 'Revision',
+                    'quiz': 'Quiz'
+                };
+                return types[helpType] || helpType;
+            }
+
+            function getSampleOpening(subject) {
+                const openings = {
+                    'english': 'The theme of conflict is central to understanding the protagonist\'s journey in this novel, as demonstrated through...',
+                    'history': 'The Industrial Revolution marked a pivotal turning point in human history, fundamentally altering economic systems through technological innovations like...',
+                    'science': 'Photosynthesis is the biochemical process that enables plants to convert light energy into chemical energy, which occurs primarily in the chloroplasts through...',
+                    'math': 'Quadratic equations form the foundation for solving many real-world problems, and their solutions can be visualized as the points where a parabola intersects...',
+                    'foreign': 'Cultural traditions play a significant role in shaping language development, as evidenced by the numerous idioms in Spanish that reference...',
+                    'arts': 'The Renaissance period saw a dramatic shift in artistic expression, with artists like Michelangelo breaking from medieval traditions to emphasize...',
+                    'other': 'When examining this topic, it\'s important to consider multiple perspectives, including...'
+                };
+                return openings[subject] || 'This topic raises important questions about...';
+            }
+
+            function getSampleSentence(subject) {
+                const sentences = {
+                    'english': 'The author employs symbolism throughout the text to convey deeper meanings, particularly through the recurring image of...',
+                    'history': 'Primary sources from this period reveal that economic factors were more influential than previously thought in driving the...',
+                    'science': 'Experimental results showed a clear correlation between temperature and reaction rate, supporting the hypothesis that...',
+                    'math': 'Applying the Pythagorean theorem to this scenario demonstrates that the relationship between the variables can be expressed as...',
+                    'foreign': 'The subjunctive mood in French is particularly important when expressing doubt or uncertainty, as seen in phrases like...',
+                    'arts': 'The use of chiaroscuro in this painting creates dramatic contrast that draws the viewer\'s attention to...',
+                    'other': 'An interdisciplinary approach to this subject reveals connections between...'
+                };
+                return sentences[subject] || 'This concept can be understood by examining...';
+            }
+
+            function getSampleContent(subject) {
+                const contents = {
+                    'english': 'The character development throughout the story follows a clear arc, beginning with... reaching a turning point when... and ultimately...',
+                    'history': 'Political tensions during this era were exacerbated by three main factors: first... second... and third... Each contributed to...',
+                    'science': 'The experimental method involved controlling for variables such as... while measuring... The data collected showed...',
+                    'math': 'To solve this problem, we first identify the known quantities... then apply the formula... which yields the solution...',
+                    'foreign': 'When conjugating reflexive verbs in the past tense, remember to... For example, "se lever" becomes... in the passé composé.',
+                    'arts': 'The composer's use of dissonance in this section creates tension that resolves when... mirroring the narrative's...',
+                    'other': 'Comparing different approaches to this issue highlights both similarities in... and differences in...'
+                };
+                return contents[subject] || 'This aspect of the topic demonstrates how... particularly when considering...';
+            }
+
+            // New chat button
+            newChatBtn.addEventListener('click', function() {
+                if (conversationHistory.length > 0) {
+                    if (confirm('Start a new chat? Your current conversation will be cleared.')) {
+                        chatContainer.innerHTML = `
+                            <div class="message-enter bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm max-w-3xl mx-auto">
+                                <div class="flex items-start space-x-3">
+                                    <div class="flex-shrink-0 bg-primary-100 dark:bg-primary-900 rounded-full w-8 h-8 flex items-center justify-center">
+                                        <i class="fas fa-robot text-primary-600 dark:text-primary-300"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium">StudyBuddy AI</p>
+                                        <p class="mt-1 text-gray-700 dark:text-gray-300">Hi there! I'm StudyBuddy, your AI homework assistant. I can help you understand concepts, brainstorm ideas, and improve your writing - but I won't do your work for you. How can I help you learn today?</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        conversationHistory = [];
+                        subjectSelect.value = '';
+                        assistanceType.value = '';
+                    }
+                }
+            });
+
+            // Prevent default anchor behavior
+            document.querySelectorAll('a').forEach(anchor => {
+                anchor.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    // Handle navigation programmatically if needed
+                });
+            });
+        });
+    </script>
+</body>
+</html>
